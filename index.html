@@ -105,7 +105,7 @@
     <div class="host">
       He's supposed to pick the plan… but he'd rather <b>you</b> have a say.<br><br>
       Behind each door is a <b>real date</b>. Pick one, and then decide whether
-      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You get <b>one free do-over</b>. 😉
+      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You can always do it over… <b>for a price</b>. 😏
     </div>
     <button class="btn" onclick="go('doors')">Let's play! 🎬</button>
     <p class="fine">No sign-up, nothing to install. Just tap.</p>
@@ -134,8 +134,8 @@
     <h1>It's a Date! 🎉</h1>
     <div id="finalCard"></div>
     <p class="missed" id="missed"></p>
-    <div id="allDoors"></div>
     <button class="btn" onclick="tellRobert()">Tell Robert my pick 💌</button>
+    <div id="redo"></div>
     <p class="fine" id="copied"></p>
   </section>
 
@@ -167,7 +167,7 @@ const DOORS = [
       meta:"📍 Bon Appétit, 148 Marina Plaza, Dunedin · 🌅 sunset 5:39 PM" } },
 ];
 
-let state = { door:null, final:null, which:null, traded:false, kisses:0, freeLeft:1, switches:0, redoUsed:false, opened:[] };
+let state = { door:null, final:null, which:null, traded:false, kisses:0 };
 
 function card(p, cat){
   return `<div class="card"><span class="emoji">${p.emoji}</span><div class="cat">${cat}</div>
@@ -179,20 +179,20 @@ function go(id){
   window.scrollTo({top:0,behavior:"smooth"});
   if (id==="doors") renderDoors();
 }
+function kissText(n){ return `${n} kiss${n>1?"es":""}`; }
 function renderDoors(){
   const el = document.getElementById("doors");
   el.innerHTML = DOORS.map((d,i)=>`
-    <div class="door ${state.opened.includes(i)?'used':''}" onclick="openDoor(${i}, this)">
+    <div class="door" onclick="openDoor(${i}, this)">
       <div class="behind">${d.icon}<small>${d.cat}</small></div>
       <div class="panel"><div class="lbl">Door</div><div class="num">${i+1}</div><div class="front">${d.icon}<br>${d.short}</div><span class="knob"></span></div>
     </div>`).join("");
-  document.getElementById("doorsSub").innerHTML = state.redoUsed
-    ? "Do-over! Pick again. <b>Robert picks the time</b> now 😏"
+  document.getElementById("doorsSub").innerHTML = state.kisses
+    ? `Do-over! Pick any door. 😏<br>💋 Kisses owed to Robert so far: <b>${state.kisses}</b>`
     : "Something at home, something musical, or something delicious?";
 }
 function openDoor(i, el){
-  if (state.door!==null && !state.redoUsed) return;
-  if (el.classList.contains("open")) return;
+  if (state.door!==null) return;
   el.classList.add("open");
   state.door = i;
   setTimeout(()=>{
@@ -211,48 +211,24 @@ function finish(){
   const d = DOORS[state.door];
   state.which = state.traded ? "alt" : "prize";
   state.final = d[state.which];
-  renderFinal(); go("final"); confetti();
-}
-function renderFinal(){
-  const d = DOORS[state.door];
   document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
-  const n = state.kisses;
-  if (state.switches === 0) {
-    const other = state.traded ? d.prize : d.alt;
-    document.getElementById("missed").innerHTML =
-      (state.traded ? "You traded away: " : "Behind the curtain was: ") + `<b>${other.title}</b> ${other.emoji}`;
-  } else if (n === 0) {
-    document.getElementById("missed").innerHTML = `🔄 Do-over used!`;
-  } else {
-    document.getElementById("missed").innerHTML = `💋 You now owe Robert <b>${n} kiss${n>1?"es":""}</b>.`;
-  }
-  const free = state.freeLeft > 0;
-  document.getElementById("allDoors").innerHTML =
-    `<p class="hint" style="margin:6px 0 4px">🚪 Here's what was behind all 3 doors.<br>` +
-     (free ? `Changed your mind? Tap any date to use your <b>free do-over</b>.</p>`
-           : `Out of do-overs! 😏 Switching again costs <b>💋 1 kiss</b>.</p>`) +
-    DOORS.map((x,i)=>`<div class="mini ${i===state.door?'mine':''}"><b>Door #${i+1} · ${x.icon} ${x.cat}</b>` +
-      ["prize","alt"].map(w=>{
-        const o=x[w], mine=(i===state.door && w===state.which);
-        return mine ? `<div class="opt cur">${o.emoji} ${o.title} <em>← yours</em></div>`
-                    : `<button class="opt" onclick="switchTo(${i},'${w}')">${o.emoji} ${o.title} <span>${free ? "🔄 do-over" : "💋 switch"}</span></button>`;
-      }).join("") + `</div>`).join("");
+  document.getElementById("missed").innerHTML = state.kisses
+    ? `💋 Kisses owed to Robert: <b>${state.kisses}</b>` : "";
+  document.getElementById("redo").innerHTML =
+    `<p class="hint" style="margin-top:18px">Not feeling it? Go back to the doors… 😏</p>
+     <button class="btn ghost" onclick="redo()">Do-over <span style="color:var(--gold)">(costs 💋 1 kiss)</span></button>`;
+  go("final"); confetti();
 }
-function switchTo(i, w){
-  const o = DOORS[i][w];
-  const free = state.freeLeft > 0;
-  if (!confirm(free ? `Use your free do-over to switch to "${o.title}"?\n(It's your only one!)`
-                    : `Switch to "${o.title}"?\nThat'll cost you 1 kiss 💋`)) return;
-  state.door = i; state.which = w; state.final = o; state.switches++;
-  if (free) state.freeLeft--; else state.kisses++;
-  renderFinal(); window.scrollTo({top:0,behavior:"smooth"}); confetti();
+function redo(){
+  if (!confirm("Go back to the doors?\nThis do-over costs you 1 kiss 💋")) return;
+  state.kisses++; state.door = null; state.final = null; state.which = null;
+  go("doors");
 }
 function summary(){
   const n = state.kisses;
   return `🎉 Let's Make a Date! I picked "${state.final.title}" ${state.final.emoji} for ${DATE_LABEL}` +
-    (n ? ` (I used my do-over and switched again, so I owe you ${n} kiss${n>1?"es":""} 💋)`
-       : state.switches ? " (I used my do-over!)"
-       : (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)"));
+    (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)") +
+    (n ? ` …after ${n} do-over${n>1?"s":""}, so I owe you ${kissText(n)} 💋` : "");
 }
 async function tellRobert(){
   const text = summary();
