@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Date status</title>
+<style>
+ body{margin:0;font-family:system-ui,sans-serif;background:#2a0a17;color:#fff6e6;min-height:100vh}
+ main{max-width:520px;margin:0 auto;padding:24px 18px}
+ h1{font-family:Georgia,serif;color:#ffcf4a;margin:0 0 4px}
+ .big{background:#fff6e6;color:#2a0a17;border-radius:16px;padding:18px;margin:16px 0;font-size:1.15rem;line-height:1.45}
+ .wait{background:rgba(255,255,255,.08);color:#fff6e6;border:2px dashed rgba(255,207,74,.5)}
+ .when{font-size:.85rem;color:#a3123f;font-weight:700;margin-bottom:6px}
+ .wait .when{color:#ffcf4a}
+ .hist div{border-top:1px solid rgba(255,246,230,.2);padding:8px 0;font-size:.92rem;opacity:.85}
+ .hist span{color:#ffcf4a;font-size:.8rem}
+ .fine{font-size:.8rem;opacity:.6;margin-top:18px}
+</style></head><body><main>
+<h1>Let's Make a Date 💌</h1>
+<div id="status">Checking…</div>
+<div class="fine" id="foot"></div>
+<div class="hist" id="hist"></div>
+</main>
+<script>
+const TOPIC="lmad-rh-6387d4edb7";
+const SINCE=Number(new URLSearchParams(location.search).get("since") ?? 1794524371);
+const fmt=t=>new Date(t*1000).toLocaleString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",hour:"numeric",minute:"2-digit"})+" PT";
+async function check(){
+  try{
+    const r=await fetch(`https://ntfy.sh/${TOPIC}/json?poll=1&since=all`,{cache:"no-store"});
+    const msgs=(await r.text()).trim().split("\n").filter(Boolean).map(l=>JSON.parse(l))
+      .filter(m=>m.event==="message" && (m.title||"").includes("she picked") && m.time>=SINCE)
+      .sort((a,b)=>a.time-b.time);
+    const st=document.getElementById("status");
+    if(!msgs.length){
+      st.innerHTML=`<div class="big wait"><div class="when">⏳ No pick yet</div>She hasn't finished the game. This page checks every 30 seconds.</div>`;
+    } else {
+      const last=msgs[msgs.length-1];
+      st.innerHTML=`<div class="big"><div class="when">✅ Latest pick · ${fmt(last.time)}</div>${last.message.replace(/</g,"&lt;")}</div>`;
+    }
+    document.getElementById("hist").innerHTML = msgs.length>1
+      ? `<p class="fine">Every result she landed on (${msgs.length}), oldest first:</p>`+msgs.map(m=>`<div><span>${fmt(m.time)}</span><br>${m.message.replace(/</g,"&lt;")}</div>`).join("") : "";
+    document.getElementById("foot").textContent="Last checked "+new Date().toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles"})+" PT";
+  }catch(e){ document.getElementById("foot").textContent="Couldn't reach the server, retrying… ("+e+")"; }
+}
+check(); setInterval(check,30000);
+</script></body></html>

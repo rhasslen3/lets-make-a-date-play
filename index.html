@@ -89,6 +89,7 @@
   .opt.cur{background:rgba(255,207,74,.2);border-color:var(--gold)}
   .opt span{float:right;color:var(--gold);opacity:1;font-size:.82rem;font-weight:700}
   .mini em{color:var(--gold);font-style:normal;font-weight:700}
+  .msg{width:100%;min-height:130px;border-radius:12px;border:2px solid var(--gold);padding:10px 12px;font:inherit;font-size:.98rem;line-height:1.4;color:var(--ink);background:var(--cream);resize:none;margin-bottom:6px}
   .fine{font-size:.8rem;opacity:.7;margin-top:22px}
   .confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:5;pointer-events:none;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
@@ -103,7 +104,7 @@
     <h1>Let's Make<br>a Date!</h1>
     <p class="sub">💌 <b>Robert</b> has invited you on a date<br><b>Friday, November 13</b></p>
     <div class="host">
-      He's supposed to pick the plan… but he'd rather <b>you</b> have a say.<br><br>
+      He's made the plans… but he's giving <b>you</b> a say.<br><br>
       Behind each door is a <b>real date</b>. Pick one, and then decide whether
       to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You can always do it over… <b>for a price</b>. 😏
     </div>
@@ -134,7 +135,10 @@
     <h1>It's a Date! 🎉</h1>
     <div id="finalCard"></div>
     <p class="missed" id="missed"></p>
-    <button class="btn" onclick="tellRobert()">Tell Robert my pick 💌</button>
+    <p class="hint" style="margin:14px 0 6px">💌 Your message to Robert, ready to send:</p>
+    <textarea id="msg" class="msg" readonly></textarea>
+    <button class="btn" onclick="copyMsg()">📋 Copy message</button>
+    <button class="btn alt" onclick="tellRobert()">Share… 💌</button>
     <div id="redo"></div>
     <p class="fine" id="copied"></p>
   </section>
@@ -146,7 +150,7 @@ const DATE_LABEL = "Friday, Nov 13";
 const DOORS = [
   { cat:"Something at Home", icon:"🏠", short:"Home",
     prize:{ emoji:"🍝", title:"Chef's Table for Two",
-      body:"A romantic dinner prepared just for you by <b>Executive Chef Robert John Hasslen III</b>, followed by a Netflix movie of <i>your</i> choosing.",
+      body:"A romantic dinner prepared just for you by <b>Executive Chef Robert John Hasslen III</b>, followed by <i>your</i> choice of a movie, a show, or more conversation.",
       meta:"📍 Robert's place · 🕖 time is your call · 👗 dress: comfy-cute" },
     alt:{ emoji:"👩‍🍳", title:"Cook-Off for Two",
       body:"We cook dinner <i>together</i>: I bring the ingredients and the wine, you bring the opinions. Then a movie on the couch.",
@@ -159,9 +163,9 @@ const DOORS = [
       body:"The <b>Sweet Lick</b> band plays live at <b>The West End Market</b>. Grab dinner from whichever stall looks best, a drink, and enjoy the music.",
       meta:"📍 The West End Market, 990 Broadway, Dunedin · 🕖 7–10 PM" } },
   { cat:"Something Delicious", icon:"🍷", short:"Food",
-    prize:{ emoji:"🍸", title:"Dinner & a Tune on Main Street",
-      body:"Craft cocktails, a chef-driven dinner, and live music at <b>The Living Room</b> in downtown Dunedin.",
-      meta:"📍 The Living Room, 487 Main St, Dunedin · 🕖 evening" },
+    prize:{ emoji:"🍻", title:"Dinner & the 727 Band",
+      body:"Dinner and drinks at <b>Crown &amp; Bull</b> in downtown Dunedin, with <b>The 727 Band</b> playing live.",
+      meta:"📍 Crown &amp; Bull, 319 Main St, Dunedin · 🍽️ dinner from 5 · 🎶 band 8–11 PM" },
     alt:{ emoji:"🌅", title:"Sunset on the Water",
       body:"Dinner on the Dunedin waterfront at <b>Bon Appétit</b>, timed so we catch the famous Dunedin sunset.",
       meta:"📍 Bon Appétit, 148 Marina Plaza, Dunedin · 🌅 sunset 5:39 PM" } },
@@ -188,7 +192,7 @@ function renderDoors(){
       <div class="panel"><div class="lbl">Door</div><div class="num">${i+1}</div><div class="front">${d.icon}<br>${d.short}</div><span class="knob"></span></div>
     </div>`).join("");
   document.getElementById("doorsSub").innerHTML = state.kisses
-    ? `Do-over! Pick any door. 😏<br>💋 Kisses owed to Robert so far: <b>${state.kisses}</b>`
+    ? `Do-over! Pick any door. 😏<br>💋 Kiss Deficit: <b>${state.kisses}</b>`
     : "Something at home, something musical, or something delicious?";
 }
 function openDoor(i, el){
@@ -213,10 +217,13 @@ function finish(){
   state.final = d[state.which];
   document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
   document.getElementById("missed").innerHTML = state.kisses
-    ? `💋 Kisses owed to Robert: <b>${state.kisses}</b>` : "";
+    ? `💋 Kiss Deficit: <b>${state.kisses}</b>` : "";
   document.getElementById("redo").innerHTML =
     `<p class="hint" style="margin-top:18px">Not feeling it? Go back to the doors… 😏</p>
      <button class="btn ghost" onclick="redo()">Do-over <span style="color:var(--gold)">(costs 💋 1 kiss)</span></button>`;
+  document.getElementById("msg").value = summary();
+  document.getElementById("copied").textContent = "";
+  postPick();
   go("final"); confetti();
 }
 function redo(){
@@ -229,6 +236,20 @@ function summary(){
   return `🎉 Let's Make a Date! I picked "${state.final.title}" ${state.final.emoji} for ${DATE_LABEL}` +
     (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)") +
     (n ? ` …after ${n} do-over${n>1?"s":""}, so I owe you ${kissText(n)} 💋` : "");
+}
+const TOPIC = "lmad-rh-6387d4edb7";
+function postPick(){
+  const body = summary();
+  try {
+    fetch("https://ntfy.sh/" + TOPIC, { method:"POST", body,
+      headers: { "Title": "Let's Make a Date: she picked!", "Tags": "heart" } }).catch(()=>{});
+  } catch(e) {}
+}
+async function copyMsg(){
+  const t = document.getElementById("msg");
+  try { await navigator.clipboard.writeText(t.value); }
+  catch(e) { t.focus(); t.select(); t.setSelectionRange(0, 99999); try { document.execCommand("copy"); } catch(_) {} }
+  document.getElementById("copied").textContent = "Copied! Paste it in a text to Robert 💌";
 }
 async function tellRobert(){
   const text = summary();
