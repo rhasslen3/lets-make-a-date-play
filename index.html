@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Let's Make a Date! 🎉</title>
+<meta name="description" content="Robert sent you a date invite. Pick a door!">
+<meta property="og:title" content="Let's Make a Date! 🎉">
+<meta property="og:description" content="Robert sent you a date invite for Friday. Pick a door…">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#5b1033">
+<style>
+  :root{
+    --bg1:#5b1033; --bg2:#a3123f; --gold:#ffcf4a; --gold2:#f2a900; --ink:#2a0a17; --cream:#fff6e6;
+    --d1:#e63b5c; --d2:#3b7de6; --d3:#2fae6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family: "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
+    color:var(--cream);
+    background: radial-gradient(ellipse at top, var(--bg2), var(--bg1) 70%);
+    min-height:100dvh; overflow-x:hidden;
+  }
+  /* marquee lights */
+  .marquee{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .marquee i{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 8px 2px rgba(255,207,74,.8);animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25;box-shadow:none}}
+  main{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:28px 18px 40px;text-align:center}
+  h1{font-family: Georgia, "Times New Roman", serif;font-size:2.3rem;line-height:1.05;margin:.2em 0 .1em;
+     color:var(--gold);text-shadow:0 3px 0 var(--gold2),0 6px 16px rgba(0,0,0,.4);letter-spacing:.5px}
+  .sub{opacity:.92;font-size:1.05rem;margin:.4em 0 1.2em}
+  .host{background:rgba(0,0,0,.25);border:2px solid rgba(255,207,74,.5);border-radius:16px;
+        padding:14px 16px;margin:0 0 18px;font-size:1.05rem;line-height:1.4}
+  .host b{color:var(--gold)}
+  .btn{display:inline-block;border:0;border-radius:999px;padding:14px 26px;margin:6px;
+       font:inherit;font-weight:700;font-size:1.08rem;cursor:pointer;
+       background:linear-gradient(var(--gold),var(--gold2));color:var(--ink);
+       box-shadow:0 4px 0 #b37b00,0 8px 18px rgba(0,0,0,.35);transition:transform .08s}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b37b00}
+  .btn.alt{background:linear-gradient(#ffffff,#e9dccb)}
+  .btn.ghost{background:transparent;color:var(--cream);box-shadow:none;border:2px solid rgba(255,246,230,.6);font-weight:600}
+  .hidden{display:none!important}
+  /* doors */
+  .doors{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0 14px;perspective:900px}
+  .door{position:relative;aspect-ratio:3/5;border-radius:10px 10px 4px 4px;cursor:pointer;
+        background:#2a0a17;box-shadow:inset 0 0 0 4px var(--gold), 0 10px 20px rgba(0,0,0,.4)}
+  .door.used{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+  .door .behind{position:absolute;inset:6px;border-radius:6px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;font-size:2.4rem;background:var(--cream);color:var(--ink)}
+  .door .behind small{font-size:.72rem;font-weight:700;margin-top:6px;padding:0 4px}
+  .door .panel{position:absolute;inset:6px;border-radius:6px;transform-origin:left center;
+        transition:transform 1.1s cubic-bezier(.3,.8,.3,1);display:flex;flex-direction:column;
+        align-items:center;justify-content:center;backface-visibility:hidden}
+  .door:nth-child(1) .panel{background:linear-gradient(160deg,var(--d1),#8f1730)}
+  .door:nth-child(2) .panel{background:linear-gradient(160deg,var(--d2),#1c3f86)}
+  .door:nth-child(3) .panel{background:linear-gradient(160deg,var(--d3),#156140)}
+  .door .num{font-family:Georgia,serif;font-size:2.6rem;font-weight:700;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .door .lbl{font-size:.8rem;letter-spacing:2px;text-transform:uppercase;opacity:.9}
+  .door .knob{position:absolute;right:10px;top:55%;width:10px;height:10px;border-radius:50%;background:var(--gold)}
+  .door.open .panel{transform:rotateY(-105deg)}
+  .door:not(.open):not(.used):hover .panel{transform:rotateY(-8deg)}
+  .hint{font-size:.9rem;opacity:.8}
+  /* prize cards */
+  .card{background:var(--cream);color:var(--ink);border-radius:18px;padding:20px 18px;margin:10px 0 16px;
+        text-align:left;box-shadow:0 12px 30px rgba(0,0,0,.4);animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+  .card .cat{font-size:.78rem;letter-spacing:2px;text-transform:uppercase;color:#a3123f;font-weight:700}
+  .card h2{font-family:Georgia,serif;margin:.25em 0 .35em;font-size:1.5rem;line-height:1.15}
+  .card p{margin:.4em 0;line-height:1.45}
+  .card .meta{font-size:.92rem;color:#5a3a45}
+  .card .emoji{font-size:2.6rem;float:right;margin-left:8px}
+  /* curtain */
+  .curtain{position:relative;height:150px;border-radius:14px;overflow:hidden;margin:6px 0 16px;
+           background:repeating-linear-gradient(90deg,#8d0f2c 0 18px,#6d0a21 18px 36px);
+           box-shadow:inset 0 -10px 20px rgba(0,0,0,.35),0 10px 20px rgba(0,0,0,.35);
+           display:flex;align-items:center;justify-content:center}
+  .curtain::before{content:"";position:absolute;left:0;right:0;top:0;height:22px;
+           background:linear-gradient(var(--gold),var(--gold2));box-shadow:0 3px 6px rgba(0,0,0,.4)}
+  .curtain span{font-family:Georgia,serif;font-size:1.5rem;color:var(--gold);text-shadow:0 2px 4px #000}
+  .missed{opacity:.9;font-size:.95rem;margin:4px 0 14px}
+  .missed b{color:var(--gold)}
+  .fine{font-size:.8rem;opacity:.7;margin-top:22px}
+  .confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:5;pointer-events:none;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<div class="marquee" id="marquee"></div>
+<main>
+
+  <!-- INTRO -->
+  <section id="s-intro">
+    <h1>Let's Make<br>a Date!</h1>
+    <p class="sub">💌 <b>Robert</b> has invited you on a date<br><b>Friday, November 13</b></p>
+    <div class="host">
+      He's supposed to pick the plan… but he'd rather <b>you</b> have a say.<br><br>
+      Behind each door is a <b>real date</b>. Pick one, and then decide whether
+      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉
+    </div>
+    <button class="btn" onclick="go('doors')">Let's play! 🎬</button>
+    <p class="fine">No sign-up, nothing to install. Just tap.</p>
+  </section>
+
+  <!-- DOORS -->
+  <section id="s-doors" class="hidden">
+    <h1>Pick a Door!</h1>
+    <p class="sub" id="doorsSub">Three doors. Three different kinds of evening.</p>
+    <div class="doors" id="doors"></div>
+    <p class="hint">Tap a door to open it</p>
+  </section>
+
+  <!-- REVEAL + DEAL -->
+  <section id="s-deal" class="hidden">
+    <h1 id="dealTitle">Door #1!</h1>
+    <div id="prizeCard"></div>
+    <div class="host" id="dealHost"></div>
+    <div class="curtain"><span>❓ Behind the curtain ❓</span></div>
+    <button class="btn" onclick="keep()">Keep it! 🙌</button>
+    <button class="btn alt" onclick="trade()">I'll trade! 🔄</button>
+  </section>
+
+  <!-- FINAL -->
+  <section id="s-final" class="hidden">
+    <h1>It's a Date! 🎉</h1>
+    <div id="finalCard"></div>
+    <p class="missed" id="missed"></p>
+    <button class="btn" onclick="tellRobert()">Tell Robert my pick 💌</button>
+    <div id="redo"></div>
+    <p class="fine" id="copied"></p>
+  </section>
+
+</main>
+
+<script>
+const DATE_LABEL = "Friday, Nov 13";
+const DOORS = [
+  { cat:"Something at Home", icon:"🏠", short:"Home",
+    prize:{ emoji:"🍝", title:"Chef's Table for Two",
+      body:"A romantic dinner prepared just for you by <b>Executive Chef Robert John Hasslen III</b>, followed by a Netflix movie of <i>your</i> choosing.",
+      meta:"📍 Robert's place · 🕖 time is your call · 👗 dress: comfy-cute" },
+    alt:{ emoji:"👩‍🍳", title:"Cook-Off for Two",
+      body:"We cook dinner <i>together</i>: I bring the ingredients and the wine, you bring the opinions. Then a movie on the couch.",
+      meta:"📍 Robert's place · 🍷 wine included · 🎬 you pick the movie" } },
+  { cat:"Something Musical", icon:"🎹", short:"Music",
+    prize:{ emoji:"🎹", title:"Piano Man",
+      body:"An intimate solo tribute to <b>Billy Joel</b> at <b>Aspirations Winery</b>: local wine, all the hits, sing-alongs encouraged.",
+      meta:"📍 Aspirations Winery, 22041 US-19 N, Clearwater · 🕖 7–9 PM" },
+    alt:{ emoji:"🎸", title:"Friday Night Live in Dunedin",
+      body:"The <b>Sweet Lick</b> band plays live at <b>The West End Market</b>. Grab dinner from whichever stall looks best, a drink, and enjoy the music.",
+      meta:"📍 The West End Market, 990 Broadway, Dunedin · 🕖 7–10 PM" } },
+  { cat:"Something Delicious", icon:"🍷", short:"Food",
+    prize:{ emoji:"🍸", title:"Dinner & a Tune on Main Street",
+      body:"Craft cocktails, a chef-driven dinner, and live music at <b>The Living Room</b> in downtown Dunedin.",
+      meta:"📍 The Living Room, 487 Main St, Dunedin · 🕖 evening" },
+    alt:{ emoji:"🌅", title:"Sunset on the Water",
+      body:"Dinner on the Dunedin waterfront at <b>Bon Appétit</b>, timed so we catch the famous Dunedin sunset.",
+      meta:"📍 Bon Appétit, 148 Marina Plaza, Dunedin · 🌅 sunset 5:39 PM" } },
+];
+
+let state = { door:null, final:null, traded:false, redoUsed:false, robertPicksTime:false, opened:[] };
+
+function card(p, cat){
+  return `<div class="card"><span class="emoji">${p.emoji}</span><div class="cat">${cat}</div>
+    <h2>${p.title}</h2><p>${p.body}</p><p class="meta">${p.meta}</p></div>`;
+}
+function go(id){
+  for (const s of document.querySelectorAll("main > section")) s.classList.add("hidden");
+  document.getElementById("s-"+id).classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+  if (id==="doors") renderDoors();
+}
+function renderDoors(){
+  const el = document.getElementById("doors");
+  el.innerHTML = DOORS.map((d,i)=>`
+    <div class="door ${state.opened.includes(i)?'used':''}" onclick="openDoor(${i}, this)">
+      <div class="behind">${d.icon}<small>${d.cat}</small></div>
+      <div class="panel"><div class="num">${i+1}</div><div class="lbl">Door</div><span class="knob"></span></div>
+    </div>`).join("");
+  document.getElementById("doorsSub").innerHTML = state.redoUsed
+    ? "Do-over! Pick again. <b>Robert picks the time</b> now 😏"
+    : "Three doors. Three different kinds of evening.";
+}
+function openDoor(i, el){
+  if (state.door!==null && !state.redoUsed) return;
+  if (el.classList.contains("open")) return;
+  el.classList.add("open");
+  state.door = i;
+  setTimeout(()=>{
+    const d = DOORS[i];
+    document.getElementById("dealTitle").textContent = `Door #${i+1}!`;
+    document.getElementById("prizeCard").innerHTML = card(d.prize, d.icon+" "+d.cat);
+    document.getElementById("dealHost").innerHTML =
+      `Ooh, nice pick! 🎤 <b>But wait…</b><br>Behind the curtain is another <b>${d.cat.toLowerCase()}</b> date.
+       Keep what you've got, or trade it, <i>sight unseen</i>?`;
+    go("deal");
+  }, 1150);
+}
+function keep(){ state.traded=false; finish(); }
+function trade(){ state.traded=true; finish(); }
+function finish(){
+  const d = DOORS[state.door];
+  state.final = state.traded ? d.alt : d.prize;
+  const other = state.traded ? d.prize : d.alt;
+  document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
+  document.getElementById("missed").innerHTML =
+    (state.traded ? "You traded away: " : "Behind the curtain was: ") + `<b>${other.title}</b> ${other.emoji}` +
+    (state.robertPicksTime ? "<br>⏰ (Do-over used: Robert picks the time.)" : "");
+  document.getElementById("redo").innerHTML = state.redoUsed ? "" :
+    `<p class="hint" style="margin-top:16px">Not feeling it? You get <b>one</b> do-over…<br>but then <b>Robert picks the time</b>. 😏</p>
+     <button class="btn ghost" onclick="redo()">Use my do-over</button>`;
+  go("final"); confetti();
+}
+function redo(){
+  state.redoUsed = true; state.robertPicksTime = true;
+  state.opened.push(state.door); state.door = null; state.final = null;
+  go("doors");
+}
+function summary(){
+  return `🎉 Let's Make a Date! I picked "${state.final.title}" ${state.final.emoji} for ${DATE_LABEL}` +
+         (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)") +
+         (state.robertPicksTime ? " (Used my do-over, so you pick the time.)" : "");
+}
+async function tellRobert(){
+  const text = summary();
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch(e) { if (e && e.name==="AbortError") return; }
+  try { await navigator.clipboard.writeText(text);
+        document.getElementById("copied").textContent = "Copied! Paste it in a text to Robert 💌"; }
+  catch(e){ document.getElementById("copied").textContent = text; }
+}
+function confetti(){
+  const colors=["#ffcf4a","#e63b5c","#3b7de6","#2fae6b","#fff6e6"];
+  for(let i=0;i<80;i++){
+    const c=document.createElement("div"); c.className="confetti";
+    c.style.left=Math.random()*100+"vw"; c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(2+Math.random()*2.5)+"s"; c.style.animationDelay=(Math.random()*.6)+"s";
+    document.body.appendChild(c); setTimeout(()=>c.remove(),5500);
+  }
+}
+(function lights(){
+  const m=document.getElementById("marquee"), w=innerWidth, h=innerHeight, gap=34; let html="";
+  for(let x=10;x<w;x+=gap){ html+=`<i style="left:${x}px;top:6px;animation-delay:${(x/gap%2)*.6}s"></i><i style="left:${x}px;bottom:6px;animation-delay:${(x/gap%2)*.6}s"></i>`; }
+  for(let y=10;y<h;y+=gap){ html+=`<i style="top:${y}px;left:6px;animation-delay:${(y/gap%2)*.6}s"></i><i style="top:${y}px;right:6px;animation-delay:${(y/gap%2)*.6}s"></i>`; }
+  m.innerHTML=html;
+})();
+</script>
+</body>
+</html>
