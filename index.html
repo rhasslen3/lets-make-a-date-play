@@ -105,7 +105,7 @@
     <div class="host">
       He's supposed to pick the plan… but he'd rather <b>you</b> have a say.<br><br>
       Behind each door is a <b>real date</b>. Pick one, and then decide whether
-      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You can — but it'll cost you <b>💋 1 kiss</b>.
+      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You get <b>one free do-over</b>. 😉
     </div>
     <button class="btn" onclick="go('doors')">Let's play! 🎬</button>
     <p class="fine">No sign-up, nothing to install. Just tap.</p>
@@ -167,7 +167,7 @@ const DOORS = [
       meta:"📍 Bon Appétit, 148 Marina Plaza, Dunedin · 🌅 sunset 5:39 PM" } },
 ];
 
-let state = { door:null, final:null, which:null, traded:false, kisses:0, redoUsed:false, opened:[] };
+let state = { door:null, final:null, which:null, traded:false, kisses:0, freeLeft:1, switches:0, redoUsed:false, opened:[] };
 
 function card(p, cat){
   return `<div class="card"><span class="emoji">${p.emoji}</span><div class="cat">${cat}</div>
@@ -217,33 +217,42 @@ function renderFinal(){
   const d = DOORS[state.door];
   document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
   const n = state.kisses;
-  if (n === 0) {
+  if (state.switches === 0) {
     const other = state.traded ? d.prize : d.alt;
     document.getElementById("missed").innerHTML =
       (state.traded ? "You traded away: " : "Behind the curtain was: ") + `<b>${other.title}</b> ${other.emoji}`;
+  } else if (n === 0) {
+    document.getElementById("missed").innerHTML = `🔄 Do-over used!`;
   } else {
-    document.getElementById("missed").innerHTML = `💋 You've switched ${n}× and now owe Robert <b>${n} kiss${n>1?"es":""}</b>.`;
+    document.getElementById("missed").innerHTML = `💋 You now owe Robert <b>${n} kiss${n>1?"es":""}</b>.`;
   }
+  const free = state.freeLeft > 0;
   document.getElementById("allDoors").innerHTML =
-    `<p class="hint" style="margin:6px 0 4px">🚪 Here's what was behind all 3 doors.<br>
-     Changed your mind? Tap any date to switch. <b>Each switch costs 💋 1 kiss.</b></p>` +
+    `<p class="hint" style="margin:6px 0 4px">🚪 Here's what was behind all 3 doors.<br>` +
+     (free ? `Changed your mind? Tap any date to use your <b>free do-over</b>.</p>`
+           : `Out of do-overs! 😏 Switching again costs <b>💋 1 kiss</b>.</p>`) +
     DOORS.map((x,i)=>`<div class="mini ${i===state.door?'mine':''}"><b>Door #${i+1} · ${x.icon} ${x.cat}</b>` +
       ["prize","alt"].map(w=>{
         const o=x[w], mine=(i===state.door && w===state.which);
         return mine ? `<div class="opt cur">${o.emoji} ${o.title} <em>← yours</em></div>`
-                    : `<button class="opt" onclick="switchTo(${i},'${w}')">${o.emoji} ${o.title} <span>💋 switch</span></button>`;
+                    : `<button class="opt" onclick="switchTo(${i},'${w}')">${o.emoji} ${o.title} <span>${free ? "🔄 do-over" : "💋 switch"}</span></button>`;
       }).join("") + `</div>`).join("");
 }
 function switchTo(i, w){
   const o = DOORS[i][w];
-  if (!confirm(`Switch to "${o.title}"?\nThat'll cost you 1 kiss 💋`)) return;
-  state.door = i; state.which = w; state.final = o; state.kisses++;
+  const free = state.freeLeft > 0;
+  if (!confirm(free ? `Use your free do-over to switch to "${o.title}"?\n(It's your only one!)`
+                    : `Switch to "${o.title}"?\nThat'll cost you 1 kiss 💋`)) return;
+  state.door = i; state.which = w; state.final = o; state.switches++;
+  if (free) state.freeLeft--; else state.kisses++;
   renderFinal(); window.scrollTo({top:0,behavior:"smooth"}); confetti();
 }
 function summary(){
   const n = state.kisses;
   return `🎉 Let's Make a Date! I picked "${state.final.title}" ${state.final.emoji} for ${DATE_LABEL}` +
-    (n ? ` (I switched ${n}×, so I owe you ${n} kiss${n>1?"es":""} 💋)` : (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)"));
+    (n ? ` (I used my do-over and switched again, so I owe you ${n} kiss${n>1?"es":""} 💋)`
+       : state.switches ? " (I used my do-over!)"
+       : (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)"));
 }
 async function tellRobert(){
   const text = summary();
