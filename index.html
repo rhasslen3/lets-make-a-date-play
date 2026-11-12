@@ -58,6 +58,7 @@
   .door:nth-child(3) .panel{background:linear-gradient(160deg,var(--d3),#156140)}
   .door .num{font-family:Georgia,serif;font-size:2.6rem;font-weight:700;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.35)}
   .door .lbl{font-size:.8rem;letter-spacing:2px;text-transform:uppercase;opacity:.9}
+  .door .front{font-size:.85rem;font-weight:700;line-height:1.25;margin-top:8px;padding:0 4px;color:#fff}
   .door .knob{position:absolute;right:10px;top:55%;width:10px;height:10px;border-radius:50%;background:var(--gold)}
   .door.open .panel{transform:rotateY(-105deg)}
   .door:not(.open):not(.used):hover .panel{transform:rotateY(-8deg)}
@@ -81,6 +82,13 @@
   .curtain span{font-family:Georgia,serif;font-size:1.5rem;color:var(--gold);text-shadow:0 2px 4px #000}
   .missed{opacity:.9;font-size:.95rem;margin:4px 0 14px}
   .missed b{color:var(--gold)}
+  .mini{background:rgba(0,0,0,.25);border:2px solid rgba(255,207,74,.35);border-radius:12px;padding:9px 12px;margin:7px 0;text-align:left;font-size:.92rem;line-height:1.4}
+  .mini.mine{border-color:var(--gold);background:rgba(255,207,74,.15)}
+  .mini span{opacity:.7;font-size:.85rem}
+  .opt{display:block;width:100%;text-align:left;margin-top:6px;padding:8px 10px;border-radius:9px;font:inherit;font-size:.92rem;color:var(--cream);background:rgba(255,255,255,.08);border:1px solid rgba(255,246,230,.25);cursor:pointer}
+  .opt.cur{background:rgba(255,207,74,.2);border-color:var(--gold)}
+  .opt span{float:right;color:var(--gold);opacity:1;font-size:.82rem;font-weight:700}
+  .mini em{color:var(--gold);font-style:normal;font-weight:700}
   .fine{font-size:.8rem;opacity:.7;margin-top:22px}
   .confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:5;pointer-events:none;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
@@ -97,7 +105,7 @@
     <div class="host">
       He's supposed to pick the plan… but he'd rather <b>you</b> have a say.<br><br>
       Behind each door is a <b>real date</b>. Pick one, and then decide whether
-      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉
+      to <b>keep it</b> or <b>trade</b> for what's behind the curtain. 😉<br><br>Change your mind later? You can — but it'll cost you <b>💋 1 kiss</b>.
     </div>
     <button class="btn" onclick="go('doors')">Let's play! 🎬</button>
     <p class="fine">No sign-up, nothing to install. Just tap.</p>
@@ -106,7 +114,7 @@
   <!-- DOORS -->
   <section id="s-doors" class="hidden">
     <h1>Pick a Door!</h1>
-    <p class="sub" id="doorsSub">Three doors. Three different kinds of evening.</p>
+    <p class="sub" id="doorsSub">Something at home, something musical, or something delicious?</p>
     <div class="doors" id="doors"></div>
     <p class="hint">Tap a door to open it</p>
   </section>
@@ -126,8 +134,8 @@
     <h1>It's a Date! 🎉</h1>
     <div id="finalCard"></div>
     <p class="missed" id="missed"></p>
+    <div id="allDoors"></div>
     <button class="btn" onclick="tellRobert()">Tell Robert my pick 💌</button>
-    <div id="redo"></div>
     <p class="fine" id="copied"></p>
   </section>
 
@@ -159,7 +167,7 @@ const DOORS = [
       meta:"📍 Bon Appétit, 148 Marina Plaza, Dunedin · 🌅 sunset 5:39 PM" } },
 ];
 
-let state = { door:null, final:null, traded:false, redoUsed:false, robertPicksTime:false, opened:[] };
+let state = { door:null, final:null, which:null, traded:false, kisses:0, redoUsed:false, opened:[] };
 
 function card(p, cat){
   return `<div class="card"><span class="emoji">${p.emoji}</span><div class="cat">${cat}</div>
@@ -176,11 +184,11 @@ function renderDoors(){
   el.innerHTML = DOORS.map((d,i)=>`
     <div class="door ${state.opened.includes(i)?'used':''}" onclick="openDoor(${i}, this)">
       <div class="behind">${d.icon}<small>${d.cat}</small></div>
-      <div class="panel"><div class="num">${i+1}</div><div class="lbl">Door</div><span class="knob"></span></div>
+      <div class="panel"><div class="lbl">Door</div><div class="num">${i+1}</div><div class="front">${d.icon}<br>${d.short}</div><span class="knob"></span></div>
     </div>`).join("");
   document.getElementById("doorsSub").innerHTML = state.redoUsed
     ? "Do-over! Pick again. <b>Robert picks the time</b> now 😏"
-    : "Three doors. Three different kinds of evening.";
+    : "Something at home, something musical, or something delicious?";
 }
 function openDoor(i, el){
   if (state.door!==null && !state.redoUsed) return;
@@ -201,26 +209,41 @@ function keep(){ state.traded=false; finish(); }
 function trade(){ state.traded=true; finish(); }
 function finish(){
   const d = DOORS[state.door];
-  state.final = state.traded ? d.alt : d.prize;
-  const other = state.traded ? d.prize : d.alt;
-  document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
-  document.getElementById("missed").innerHTML =
-    (state.traded ? "You traded away: " : "Behind the curtain was: ") + `<b>${other.title}</b> ${other.emoji}` +
-    (state.robertPicksTime ? "<br>⏰ (Do-over used: Robert picks the time.)" : "");
-  document.getElementById("redo").innerHTML = state.redoUsed ? "" :
-    `<p class="hint" style="margin-top:16px">Not feeling it? You get <b>one</b> do-over…<br>but then <b>Robert picks the time</b>. 😏</p>
-     <button class="btn ghost" onclick="redo()">Use my do-over</button>`;
-  go("final"); confetti();
+  state.which = state.traded ? "alt" : "prize";
+  state.final = d[state.which];
+  renderFinal(); go("final"); confetti();
 }
-function redo(){
-  state.redoUsed = true; state.robertPicksTime = true;
-  state.opened.push(state.door); state.door = null; state.final = null;
-  go("doors");
+function renderFinal(){
+  const d = DOORS[state.door];
+  document.getElementById("finalCard").innerHTML = card(state.final, d.icon+" "+d.cat);
+  const n = state.kisses;
+  if (n === 0) {
+    const other = state.traded ? d.prize : d.alt;
+    document.getElementById("missed").innerHTML =
+      (state.traded ? "You traded away: " : "Behind the curtain was: ") + `<b>${other.title}</b> ${other.emoji}`;
+  } else {
+    document.getElementById("missed").innerHTML = `💋 You've switched ${n}× and now owe Robert <b>${n} kiss${n>1?"es":""}</b>.`;
+  }
+  document.getElementById("allDoors").innerHTML =
+    `<p class="hint" style="margin:6px 0 4px">🚪 Here's what was behind all 3 doors.<br>
+     Changed your mind? Tap any date to switch. <b>Each switch costs 💋 1 kiss.</b></p>` +
+    DOORS.map((x,i)=>`<div class="mini ${i===state.door?'mine':''}"><b>Door #${i+1} · ${x.icon} ${x.cat}</b>` +
+      ["prize","alt"].map(w=>{
+        const o=x[w], mine=(i===state.door && w===state.which);
+        return mine ? `<div class="opt cur">${o.emoji} ${o.title} <em>← yours</em></div>`
+                    : `<button class="opt" onclick="switchTo(${i},'${w}')">${o.emoji} ${o.title} <span>💋 switch</span></button>`;
+      }).join("") + `</div>`).join("");
+}
+function switchTo(i, w){
+  const o = DOORS[i][w];
+  if (!confirm(`Switch to "${o.title}"?\nThat'll cost you 1 kiss 💋`)) return;
+  state.door = i; state.which = w; state.final = o; state.kisses++;
+  renderFinal(); window.scrollTo({top:0,behavior:"smooth"}); confetti();
 }
 function summary(){
+  const n = state.kisses;
   return `🎉 Let's Make a Date! I picked "${state.final.title}" ${state.final.emoji} for ${DATE_LABEL}` +
-         (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)") +
-         (state.robertPicksTime ? " (Used my do-over, so you pick the time.)" : "");
+    (n ? ` (I switched ${n}×, so I owe you ${n} kiss${n>1?"es":""} 💋)` : (state.traded ? " (I traded for the curtain!)" : " (I kept my door!)"));
 }
 async function tellRobert(){
   const text = summary();
